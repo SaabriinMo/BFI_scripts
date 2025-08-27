@@ -71,6 +71,17 @@ jobs:
             echo "changes=false" >> $GITHUB_OUTPUT
             echo "No formatting changes needed"
           fi
+
+      - name: Run python test
+        if: steps.check-changes.outputs.changes == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+         pip install pytest
+         pytest -v tests/test_utils.py
+
+
       - name: Commit changes back to branch
         if: steps.check-changes.outputs.changes == 'true'
         run: |
