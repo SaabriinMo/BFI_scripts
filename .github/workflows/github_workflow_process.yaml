@@ -78,7 +78,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: |
-         pip install pytest
+         pip install pytest pyyaml
          pytest -v tests/test_utils.py
 
 
