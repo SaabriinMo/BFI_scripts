@@ -78,7 +78,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: |
-         pip install pytest pyyaml
+         pip install pytest pyyaml ffmpeg-python requests xmltodict dicttoxml lxml tenacity
          pytest -v tests/test_utils.py
 
 
