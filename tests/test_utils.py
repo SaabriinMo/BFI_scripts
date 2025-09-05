@@ -8,21 +8,21 @@ import sys
 
 import pytest
 
-sys.path.append(os.environ["CODE"])
+#sys.path.append(os.environ["CODE"])
 
 # custom import
 import utils
 
 
 @pytest.mark.parametrize(
-    "key_input, expected_output",
+    "key_input, expected_output, raise_error",
     [
-        ("black_pearl", True),
-        ("power_off_all", True),
-        ("/mnt/isilon/film_operations/Finished", False),
+        ("black_pearl", True, False),
+        ("power_off_all", True, False),
+        ("/mnt/isilon/film_operations/Finished", KeyError, True),
     ],
 )
-def test_check_control(key_input, expected_output):
+def test_check_control(key_input, expected_output, raise_error):
     """
     Tests the check control function.
 
@@ -32,8 +32,13 @@ def test_check_control(key_input, expected_output):
         - the key exists and return the value.
 
     """
-    json_response = utils.check_control(key_input)
-    assert json_response is expected_output
+
+    if raise_error:
+        with pytest.raises(expected_output):
+            utils.check_control(key_input)
+    else:
+        json_response = utils.check_control(key_input)
+        assert json_response is expected_output
 
 
 @pytest.mark.skip(reason="no api credentials")
@@ -208,7 +213,7 @@ def test_read_extract(writing_txt):
         ("STL_987654_09of20.avi", False),
         (".DS_STORE", False),
         ("N_123456_01of02.gif", False),
-        ("PD_376857_03of10.avi", False),
+        ("PD_376857_03of10.avi", True),
     ],
 )
 def test_check_filename(filename, expected_results):

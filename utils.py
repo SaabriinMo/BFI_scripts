@@ -23,6 +23,7 @@ from typing import Final, Optional
 from zoneinfo import ZoneInfo
 
 import ffmpeg
+from ffmpeg._run import Error as FFmpegError
 import yaml
 
 # BFI library
@@ -337,7 +338,7 @@ def probe_metadata(arg, stream, fpath):
     """
     try:
         probe = ffmpeg.probe(fpath)
-    except ffmpeg.Error as err:
+    except ffmpeg.FFmpegError as err:
         print(err)
         return None
 
