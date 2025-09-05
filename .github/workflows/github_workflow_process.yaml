@@ -17,7 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     env: 
       LOG_PATH: ${{secrets.LOG_PATH}}
-     
+      SMTP_SERVER: ${{secrets.SMTP_SERVER}}
+      SMTP_PORT:  ${{secrets.SMTP_PORT}}
+      EMAIL:  ${{secrets.EMAIL}}
+      PASSWORD:  ${{secrets.PASSWORD}}
     steps:
       - name: Debug Branch Info
         run: |
