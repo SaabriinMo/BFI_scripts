@@ -15,7 +15,8 @@ permissions:
 jobs:
   format-and-create-pr:
     runs-on: ubuntu-latest
-    env:
+    env: 
+      LOG_PATH: ${{secrets.LOG_PATH}}
      
     steps:
       - name: Debug Branch Info
