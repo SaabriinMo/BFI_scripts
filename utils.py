@@ -645,6 +645,7 @@ def send_email(
     automate the process of sending out simple emails
     """
     success = False
+    storage = "right amount"
     try:
         msg = MIMEMultipart()
         msg["From"] = "digitalpreservationsystems@bfi.org.uk"
@@ -663,6 +664,8 @@ def send_email(
                     msg.attach(attachment_package)
             else:
                 body += f"\n \n User has added an attachment: {files} which is above the recommended size, find a different method to send the file.\n"
+                storage = "file is too big"
+                
 
         msg.attach(MIMEText(body, "plain"))
 
@@ -674,7 +677,9 @@ def send_email(
 
         print(f"Email notification sent to {email}")
         success = True
-        return success, ""
+        if storage == "file is too big":
+            return False, "file too big"
+        return False, ""
 
     except Exception as e:
         print(f"Email notification failed in sending: {email}\n{e}")
