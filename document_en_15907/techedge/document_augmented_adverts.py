@@ -63,7 +63,7 @@ CHANNELS = {
     "ITV4": ["ITV4", "MPEG-4 AVC", "20425"],
     "ITVQuiz": ["ITVBe", "MPEG-4 AVC", "20425"], # JMW Do we need this one any longer Stephen?
     "CH4": [
-        "Channel 4 HD", 
+        "Channel 4 HD",
         "MPEG-4 AVC",
         "73319"
     ],
