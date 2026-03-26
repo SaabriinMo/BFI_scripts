@@ -29,8 +29,7 @@ LOG_PATH: Final = os.environ["LOG_PATH"]
 CODE_PATH: Final = os.environ["CODE"]
 CONTROL: Final = os.path.join(LOG_PATH, "downtime_control.json")
 DEST: Final = os.path.join(
-    os.environ.get("ADMIN"),
-    "datasets/adverts_techedge_no_dupes/"
+    os.environ.get("ADMIN"), "datasets/adverts_techedge_no_dupes/"
 )
 
 # Setup logging
@@ -43,11 +42,7 @@ hdlr.setFormatter(formatter)
 LOGGER.addHandler(hdlr)
 LOGGER.setLevel(logging.INFO)
 
-OMIT = [
-    "SKYADSMART000",
-    "C4ADDRESSABLE",
-    "ITVADDRESSABLE"
-]
+OMIT = ["SKYADSMART000", "C4ADDRESSABLE", "ITVADDRESSABLE"]
 
 HEADER = [
     "Channel",
@@ -68,7 +63,7 @@ HEADER = [
     "All PIB rel",
     "All PIB pos",
     "Log Station (2010-)",
-    "Impacts A4+"
+    "Impacts A4+",
 ]
 
 
@@ -187,19 +182,19 @@ def main() -> None:
                 capture_output=True,
                 check=True,
                 text=True,
-                shell=False
+                shell=False,
             )
             count2 = subprocess.run(
                 ["wc", "-l", clean_csv],
                 capture_output=True,
                 check=True,
                 text=True,
-                shell=False
+                shell=False,
             )
             LOGGER.info(
                 "New CSV created: Downloaded line count %s / Clean up CSV line count %s",
                 count1.stdout.split(" ")[0],
-                count2.stdout.split(" ")[0]
+                count2.stdout.split(" ")[0],
             )
         except Exception as err:
             LOGGER.warning("Could not access CSV lengths: %s", err)
