@@ -890,7 +890,7 @@ def get_duration_total_parts(
     )
     print(f"Targeting path for next data: {csv_path}")
     rows = []
-    with open(csv_path, 'r', encoding='utf-8') as file:
+    with open(csv_path, "r", encoding="utf-8") as file:
         for lines in file:
             parts = lines.strip().split(",")
             try:
