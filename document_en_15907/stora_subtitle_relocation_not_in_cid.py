@@ -8,6 +8,7 @@ and the contents in .vtt files.
 
 June 2026
 """
+
 import argparse
 import logging
 import os
@@ -26,7 +27,7 @@ import adlib_v3_sess as adlib_sess
 import utils
 
 
-CID_API = os.environ['CID_API3']
+CID_API = os.environ["CID_API3"]
 LOG_PATH = os.environ["LOG_PATH"]
 SUBTITLE_FOLDER = os.path.join(
     os.environ.get("ADMIN"), "off_air_tv/subtitles_not_in_cid"
@@ -44,12 +45,8 @@ TIME_FORMAT = "%H:%M:%S"
 DATE_FORMAT = "%Y-%m-%d"
 
 logger = logging.getLogger("subtitle_relocation")
-hdlr = logging.FileHandler(
-    os.path.join(LOG_PATH, "subtitle_relocation.log")
-)
-formatter = logging.Formatter(
-    "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-)
+hdlr = logging.FileHandler(os.path.join(LOG_PATH, "subtitle_relocation.log"))
+formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)
 logger.setLevel(logging.INFO)
@@ -85,9 +82,7 @@ def retrieve_single_record(
 ) -> Optional[list[dict]]:
     """Query adlib for a single record matching search_field=search_value."""
     query = safe_search_query(search_field, search_value)
-    hits, records = adlib.retrieve_record(
-        CID_API, database, query, "1", fields=fields
-    )
+    hits, records = adlib.retrieve_record(CID_API, database, query, "1", fields=fields)
     if not hits or not records:
         return None
     return records
@@ -112,9 +107,7 @@ def get_manifestation_priref(item_priref: str) -> Optional[str]:
     """Look up the parent manifestation priref for a given item priref."""
     records = retrieve_single_record("items", "priref", item_priref)
     if not records:
-        logger.warning(
-            "No manifestation record for item_priref=%s", item_priref
-        )
+        logger.warning("No manifestation record for item_priref=%s", item_priref)
         return None
     return get_field(records[0], "part_of_reference.lref")
 
@@ -134,9 +127,7 @@ def get_transmission_info(
         ],
     )
     if not records:
-        logger.warning(
-            "No transmission info for priref=%s", manifestation_priref
-        )
+        logger.warning("No transmission info for priref=%s", manifestation_priref)
         return None
 
     trans_date = get_field(records[0], "transmission_date")
@@ -145,8 +136,7 @@ def get_transmission_info(
 
     if not all([trans_date, end_time, start_time]):
         logger.error(
-            "Incomplete transmission data for priref=%s "
-            "(date=%s, end=%s, start=%s)",
+            "Incomplete transmission data for priref=%s " "(date=%s, end=%s, start=%s)",
             manifestation_priref,
             trans_date,
             end_time,
@@ -154,9 +144,7 @@ def get_transmission_info(
         )
         return None
 
-    return TransmissionInfo(
-        date=trans_date, start_time=start_time, end_time=end_time
-    )
+    return TransmissionInfo(date=trans_date, start_time=start_time, end_time=end_time)
 
 
 def working_day_check(dt: datetime) -> bool:
@@ -189,9 +177,7 @@ def adjust_date_for_midnight(info: TransmissionInfo) -> str:
     return date.strftime(DATE_FORMAT)
 
 
-def build_subtitle_edit_xml(
-    priref: str, subtitle_date: str, vtt_text: str
-) -> str:
+def build_subtitle_edit_xml(priref: str, subtitle_date: str, vtt_text: str) -> str:
     """Build XML edit record payload with subtitle metadata and VTT content."""
     now = datetime.now()
     edit_entries = [
@@ -211,9 +197,9 @@ def post_xml_to_cid(edit_xml) -> tuple[bool, str]:
     try:
         record = adlib_sess.post(CID_API, edit_xml, "items", "updaterecord", None)
     except Exception as err:
-        if hasattr(err, '__cause__'):
+        if hasattr(err, "__cause__"):
             reason = f"Cause: {err.__cause__}"
-        elif hasattr(err, 'last_attempt'):
+        elif hasattr(err, "last_attempt"):
             reason = f"Underlying exception: {err.last_attempt.exception()}"
         else:
             reason = str(err)
@@ -238,8 +224,10 @@ def main():
         description="Relocate subtitle VTT files into the CID database."
     )
     parser.add_argument(
-        "--limit", type=int, default=0,
-        help="Process at most N files (default: 0 = all files)"
+        "--limit",
+        type=int,
+        default=0,
+        help="Process at most N files (default: 0 = all files)",
     )
     args = parser.parse_args()
 
@@ -253,12 +241,9 @@ def main():
         "========== subtitle creation script STARTED "
         "==============================================="
     )
-    list_files = [
-        f for f in os.listdir(SUBTITLE_FOLDER)
-        if f.endswith(".vtt")
-    ]
+    list_files = [f for f in os.listdir(SUBTITLE_FOLDER) if f.endswith(".vtt")]
     if args.limit:
-        list_files = list_files[:args.limit]
+        list_files = list_files[: args.limit]
 
     total = len(list_files)
     successes = 0
@@ -312,8 +297,9 @@ def main():
         trans_info = get_transmission_info(mani_priref)
         if not trans_info:
             logger.error(
-                "Skipping %s: no/incomplete transmission data for "
-                "manifestation %s", file, mani_priref
+                "Skipping %s: no/incomplete transmission data for " "manifestation %s",
+                file,
+                mani_priref,
             )
             errors += 1
             continue
@@ -325,9 +311,7 @@ def main():
             subtitle_date = adjust_date_for_midnight(trans_info)
             logger.info("subtitle_date: %s", subtitle_date)
         except ValueError as exc:
-            logger.error(
-                "Date adjustment failed for %s: %s", file, exc
-            )
+            logger.error("Date adjustment failed for %s: %s", file, exc)
             errors += 1
             continue
 

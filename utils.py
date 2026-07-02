@@ -732,9 +732,7 @@ def send_email(
 
         with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, context=CONTEXT) as smtp:
             smtp.login(EMAIL, PASSWORD)
-            smtp.sendmail(
-                send_email, email, msg.as_string()
-            )
+            smtp.sendmail(send_email, email, msg.as_string())
 
         print(f"Email notification sent to {email}")
         success = True
