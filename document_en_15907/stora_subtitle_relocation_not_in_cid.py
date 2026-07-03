@@ -192,10 +192,10 @@ def build_subtitle_edit_xml(priref: str, subtitle_date: str, vtt_text: str) -> s
     return adlib.create_grouped_data(priref, "Edit", [edit_entries])
 
 
-def post_xml_to_cid(edit_xml) -> tuple[bool, str]:
+def post_xml_to_cid(edit_xml, session) -> tuple[bool, str]:
     """Post an edit XML record to the CID API. Returns (success, error_reason)."""
     try:
-        record = adlib_sess.post(CID_API, edit_xml, "items", "updaterecord", None)
+        record = adlib_sess.post(CID_API, edit_xml, "items", "updaterecord", session)
     except Exception as err:
         if hasattr(err, "__cause__"):
             reason = f"Cause: {err.__cause__}"
@@ -219,7 +219,7 @@ def post_xml_to_cid(edit_xml) -> tuple[bool, str]:
 
 def main():
     """Parse args, iterate VTT files, and post subtitle records to CID."""
-
+    session = adlib_sess.create_session()
     parser = argparse.ArgumentParser(
         description="Relocate subtitle VTT files into the CID database."
     )
@@ -330,7 +330,7 @@ def main():
 
         logger.debug("XML payload:\n%s", xml_payload)
 
-        success, reason = post_xml_to_cid(xml_payload)
+        success, reason = post_xml_to_cid(xml_payload, session)
         if success:
             successes += 1
             logger.info("SUCCESS | Post Successful")
