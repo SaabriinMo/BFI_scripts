@@ -107,7 +107,7 @@ def main() -> None:
         if not utils.check_control("black_pearl"):
             sys.exit("Black Pearl facing code cannot run at this time.")
 
-        #LOGGER.info("Row entry: %s", row[1])
+        # LOGGER.info("Row entry: %s", row[1])
         try:
             fname = row[1].strip()
         except IndexError as err:

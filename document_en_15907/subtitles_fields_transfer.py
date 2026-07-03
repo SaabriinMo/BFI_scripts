@@ -10,7 +10,7 @@ import shutil
 import logging
 import time
 
-CID_API = os.environ['CID_API3']
+CID_API = os.environ["CID_API3"]
 LOG_PATH = os.environ["LOG_PATH"]
 
 logger = logging.getLogger("subtitle_fields_transfer")
@@ -21,13 +21,14 @@ logger.addHandler(hdlr)
 logger.setLevel(logging.INFO)
 logger.info("Logger initialised")
 
+
 def post_xml_to_cid(edit_xml) -> tuple[bool, str]:
     try:
         record = adlib_sess.post(CID_API, edit_xml, "items", "updaterecord", None)
     except Exception as err:
-        if hasattr(err, '__cause__'):
+        if hasattr(err, "__cause__"):
             reason = f"Cause: {err.__cause__}"
-        elif hasattr(err, 'last_attempt'):
+        elif hasattr(err, "last_attempt"):
             reason = f"Underlying exception: {err.last_attempt.exception()}"
         else:
             reason = str(err)
@@ -44,13 +45,16 @@ def post_xml_to_cid(edit_xml) -> tuple[bool, str]:
         return False, reason
     return True, ""
 
+
 def main():
     logger.info(
         "========== Transfer subtitle fields script STARTED ==============================================="
     )
     search_query = "(grouping.lref='398775' and label.type='*VTT' and input.date>'2022-09-01' and input.date<'2022-09-10')"
-    fields = ['label.type', 'label.text', 'label.source', 'input.date', 'priref']
-    hits, item_record = adlib.retrieve_record(CID_API, "items", search_query, "1", fields=fields)
+    fields = ["label.type", "label.text", "label.source", "input.date", "priref"]
+    hits, item_record = adlib.retrieve_record(
+        CID_API, "items", search_query, "1", fields=fields
+    )
     logger.info("hits: %s", hits)
 
     total = hits
@@ -65,7 +69,9 @@ def main():
             search = f"(priref>{current_priref}) and {search_query}"
 
         time.sleep(0.3)
-        _, item_record = adlib.retrieve_record(CID_API, "items", search, "1", fields=fields)
+        _, item_record = adlib.retrieve_record(
+            CID_API, "items", search, "1", fields=fields
+        )
 
         if not item_record:
             break
@@ -81,7 +87,7 @@ def main():
         subtitle_text = adlib.retrieve_field_name(item_record[0], "label.text")
         subtitle_type = adlib.retrieve_field_name(item_record[0], "label.type")
         subtitle_source = adlib.retrieve_field_name(item_record[0], "label.source")
-        
+
         if not all([input_date, subtitle_text, subtitle_type, subtitle_source]):
             logger.error("Skipping priref=%s: missing subtitle fields", current_priref)
             errors += 1
@@ -95,7 +101,7 @@ def main():
             {"subtitle.date": input_date[0]},
             {"subtitle.text": subtitle_text[0].replace("ï»¿", "")},
             {"subtitle.type": subtitle_type[0]},
-            {"subtitle.source": subtitle_source[0]}
+            {"subtitle.source": subtitle_source[0]},
         ]
 
         edit_xml = adlib.create_grouped_data(current_priref, "Edit", [item_edit_data])
@@ -106,16 +112,19 @@ def main():
             logger.info("OK | (%d/%d) priref=%s", i + 1, total, current_priref)
             successes += 1
         else:
-            logger.error("FAIL | (%d/%d) priref=%s | reason=%s", i + 1, total, current_priref, reason)
+            logger.error(
+                "FAIL | (%d/%d) priref=%s | reason=%s",
+                i + 1,
+                total,
+                current_priref,
+                reason,
+            )
             errors += 1
 
     logger.info("SUMMARY: %d / %d succeeded | %d errors", successes, total, errors)
     logger.info(
         "========== Transfer subtitle fields script END ==============================================="
     )
-
-
-
 
 
 if __name__ == "__main__":
