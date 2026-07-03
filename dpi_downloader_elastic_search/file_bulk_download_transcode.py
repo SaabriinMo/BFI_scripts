@@ -456,7 +456,7 @@ def main():
                 orig_fname,
                 media_priref,
             )
-            if 'blobbing' in str(bucket):
+            if "blobbing" in str(bucket):
                 blob = True
 
             # Check if download already exists
@@ -493,7 +493,9 @@ def main():
                 elif blob is True:
                     LOGGER.info("File is blobbed. Changing retrieval method")
                     try:
-                        download_job_id = bp.download_blobbed_object(fname, download_fpath, bucket)
+                        download_job_id = bp.download_blobbed_object(
+                            fname, download_fpath, bucket
+                        )
                     except Exception as error:
                         print(error)
                         update_table(user_id, "Blob download error")
@@ -656,7 +658,7 @@ def main():
                         orig_fname,
                         media_priref,
                     )
-                    if 'blobbing' in bucket:
+                    if "blobbing" in bucket:
                         blob = True
 
                     # Check if download already exists
@@ -680,7 +682,9 @@ def main():
                             )
                         elif blob is True:
                             LOGGER.info("File is blobbed. Changing retrieval method")
-                            download_job_id = bp.download_blobbed_object(filename, download_fpath, bucket)
+                            download_job_id = bp.download_blobbed_object(
+                                filename, download_fpath, bucket
+                            )
 
                         if not download_job_id:
                             LOGGER.warning(
@@ -720,7 +724,9 @@ def main():
                             continue
                         # MD5 Verification - skip blobbed items
                         if blob is False:
-                            local_md5, bp_md5 = make_check_md5(new_fpath, filename, bucket)
+                            local_md5, bp_md5 = make_check_md5(
+                                new_fpath, filename, bucket
+                            )
                             LOGGER.info(
                                 "MD5 checksum validation check:\n\t%s - Downloaded file MD5\n\t%s - Black Pearl retrieved MD5",
                                 local_md5,
@@ -914,7 +920,9 @@ This is an automated notification, please do not reply to this email.
 Thank you,
 Digital Preservation team"""
 
-    success, error = utils.send_email(email, "digitalpreservationsystems@bfi.org.uk", subject, body, "")
+    success, error = utils.send_email(
+        email, "digitalpreservationsystems@bfi.org.uk", subject, body, ""
+    )
     if success:
         LOGGER.info("Email notification sent to %s", email)
     else:
@@ -999,7 +1007,9 @@ This is an automated notification, please do not reply to this email.
 Thank you,
 Digital Preservation team"""
 
-    success, error = utils.send_email(email, "digitalpreservationsystems@bfi.org.uk", subject, body, "")
+    success, error = utils.send_email(
+        email, "digitalpreservationsystems@bfi.org.uk", subject, body, ""
+    )
     if success:
         LOGGER.info("Email notification sent to %s", email)
     else:
@@ -1036,7 +1046,9 @@ This is an automated notification, please do not reply to this email.
 Thank you,
 Digital Preservation team"""
 
-    success, error = utils.send_email(email, "digitalpreservationsystems@bfi.org.uk", subject, body, "")
+    success, error = utils.send_email(
+        email, "digitalpreservationsystems@bfi.org.uk", subject, body, ""
+    )
     if success:
         LOGGER.info("Email notification sent to %s", email)
     else:

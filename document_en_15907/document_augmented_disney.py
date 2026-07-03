@@ -1269,7 +1269,7 @@ def build_defaults(data: dict[str, str]) -> list[dict[str, str]]:
         {"colour_manifestation": data["colour_manifestation"]},
         {"sound_manifestation": "SOUN"},
         {"transmission_date": data["title_date_start"]},
-        {"availability.name.lref": "999823967"}, # Disney+
+        {"availability.name.lref": "999823967"},  # Disney+
         {"transmission_coverage": "STR"},
         {"vod_service_type.lref": "398712"},
         {"aspect_ratio": "16:9"},

@@ -29,7 +29,7 @@ def get_item_priref(object_number: str) -> str | None:
     return prirefs[0], item_record if prirefs else None
 
 def get_manifestation_record(item_priref):
-    
+
 
 def process_subtitle_file(file: str) -> None:
     """Look up CID record for a subtitle file and post the subtitle data."""
