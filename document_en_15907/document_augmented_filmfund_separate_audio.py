@@ -27,11 +27,11 @@ after CID Item record object_number.
 # Public packages
 import os
 import sys
-import ffmpeg
 import shutil
 import logging
 import datetime
 from typing import Any, Iterable, Final, Optional
+import ffmpeg
 
 # Local packages
 sys.path.append(os.environ.get("CODE"))
@@ -156,7 +156,7 @@ def main():
         )
 
         # Create CID item record for mono/stereo audio files in folder
-        item_record = create_new_item_record(source_priref, wav_type, record, ext)
+        item_record = create_new_item_record(source_priref, wav_type, record)
         if item_record is None:
             continue
 
@@ -196,7 +196,7 @@ def main():
             continue
 
         # Write all dict names to digital.acquired_filename in CID item record
-        success = create_digital_original_filenames(new_priref, file)
+        success = create_digital_original_filenames(new_priref, file, new_file)
         if not success:
             LOGGER.warning(
                 "Skipping further actions. Digital acquired filenames not written to CID item record: %s",
@@ -282,7 +282,7 @@ def rename_or_move(arg: str, file_a: str, file_b: str) -> str | bool:
 
 
 def make_item_record_dict(
-    priref: str, source: str, record: list[dict[str, Optional[Any]]], ext: str
+    priref: str, source: str, record: list[dict[str, Optional[Any]]]
 ) -> Iterable[dict[str, str]]:
     """
     Get CID item record for source and borrow data
@@ -294,7 +294,7 @@ def make_item_record_dict(
         {"input.date": str(datetime.datetime.now())[:10]},
         {"input.time": str(datetime.datetime.now())[11:19]},
         {
-            "input.notes": f"Film Fund - automated bulk documentation for separate audio"
+            "input.notes": "Film Fund - automated bulk documentation for separate audio"
         }
     ]
     item.append({"record_type": "ITEM"})
@@ -337,8 +337,8 @@ def make_item_record_dict(
     elif source == "stereo":
         item.append({"related_object.notes": "Stereo audio for"})
 
-    item.append({"file_type.ref": "99837"})
-    item.append({"code_type": "99837"})
+    item.append({"file_type": "WAV"})
+    item.append({"code_type": "WAV"})
     item.append({"track_type": "PCM"})
     if "acquisition.date" in str(record):
         item.append(
@@ -377,18 +377,17 @@ def make_item_record_dict(
 
 
 def create_digital_original_filenames(
-    priref: str, asset_list_dct: dict[Any, Any]
+    priref: str, file, new_file
 ) -> bool:
     """
     Create entries for digital.acquired_filename
     and append to the CID item record.
     """
     payload = f"<adlibXML><recordList><record priref='{priref}'>"
-    for key, val in asset_list_dct.items():
-        filename = f"{key} - Renamed to: {val}"
-        LOGGER.info("Writing to digital.acquired_filename: %s", filename)
-        pay_mid = f"<Acquired_filename><digital.acquired_filename>{filename}</digital.acquired_filename><digital.acquired_filename.type>FILE</digital.acquired_filename.type></Acquired_filename>"
-        payload = payload + pay_mid
+    filename = f"{file} - Renamed to: {new_file}"
+    LOGGER.info("Writing to digital.acquired_filename: %s", filename)
+    pay_mid = f"<Acquired_filename><digital.acquired_filename>{filename}</digital.acquired_filename><digital.acquired_filename.type>FILE</digital.acquired_filename.type></Acquired_filename>"
+    payload = payload + pay_mid
 
     pay_edit = f"<Edit><edit.name>datadigipres</edit.name><edit.date>{str(datetime.datetime.now())[:10]}</edit.date><edit.time>{str(datetime.datetime.now())[11:19]}</edit.time><edit.notes>Film Fund digital acquired filename update</edit.notes></Edit>"
     payload_end = "</record></recordList></adlibXML>"
@@ -415,12 +414,12 @@ def create_digital_original_filenames(
 
 
 def create_new_item_record(
-    priref: str, wav_type: str, record: dict[str, Optional[Any]], ext: str
+    priref: str, wav_type: str, record: dict[str, Optional[Any]]
 ):
     """
     Build new CID item record from existing data and make CID item record
     """
-    item_dct = make_item_record_dict(priref, wav_type, record, ext)
+    item_dct = make_item_record_dict(priref, wav_type, record)
     LOGGER.info(item_dct)
     item_xml = adlib.create_record_data(CID_API, "items", "", item_dct)
     new_record = adlib.post(CID_API, item_xml, "items", "insertrecord")
