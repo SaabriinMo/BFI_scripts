@@ -45,7 +45,7 @@ FF_STORAGE: Final = os.path.join(os.environ.get("QNAP_11"))
 AUTOINGEST: Final = os.path.join(
     os.environ.get("AUTOINGEST_QNAP11"), "ingest/autodetect/"
 )
-STORAGE: Final = os.path.join(FF_STORAGE, 'automation/audio_description')
+STORAGE: Final = os.path.join(FF_STORAGE, "automation/audio_description")
 CID_API = utils.get_current_api()
 
 # Setup logging
@@ -82,7 +82,9 @@ def main():
     if not utils.check_control("pause_scripts"):
         sys.exit("Script run prevented by downtime_control.json. Script exiting.")
 
-    folders = [x for x in os.listdir(STORAGE) if os.path.isdir(os.path.join(STORAGE, x))]
+    folders = [
+        x for x in os.listdir(STORAGE) if os.path.isdir(os.path.join(STORAGE, x))
+    ]
     if not folders:
         sys.exit("No folders found at this time")
 
@@ -142,18 +144,14 @@ def main():
         # Check object number valid
         record = cid_check_ob_num(object_number)
         if record is None:
-            LOGGER.warning(
-                "Skipping: Record could not be matched with object_number"
-            )
+            LOGGER.warning("Skipping: Record could not be matched with object_number")
             continue
 
         source_priref = adlib.retrieve_field_name(record[0], "priref")[0]
         if not source_priref:
             continue
         print(f"Priref matched with retrieved folder name: {source_priref}")
-        LOGGER.info(
-            "Priref %s matched with folder name: %s", source_priref, folder
-        )
+        LOGGER.info("Priref %s matched with folder name: %s", source_priref, folder)
 
         # Create CID item record for mono/stereo audio files in folder
         item_record = create_new_item_record(source_priref, wav_type, record, ext)
@@ -172,7 +170,9 @@ def main():
         success = rename_or_move("rename", filepath, new_filepath)
         if success is False:
             if not os.path.exists(new_filepath):
-                LOGGER.warning("File was not renamed successfully. Manual assistance needed.")
+                LOGGER.warning(
+                    "File was not renamed successfully. Manual assistance needed."
+                )
                 continue
         elif success == "Path error":
             LOGGER.warning("Path error: %s", os.path.join(filepath, new_filepath))
@@ -209,9 +209,7 @@ def main():
 
         # Write quality comments to new CID item record
         if wav_type == "mono":
-            qual_comm = (
-                    "Mono audio supplied separately as WAV PCM file."
-                )
+            qual_comm = "Mono audio supplied separately as WAV PCM file."
         elif wav_type == "stereo":
             qual_comm = "Stereo audio supplied separately as WAV PCM file."
         else:
@@ -293,9 +291,7 @@ def make_item_record_dict(
         {"input.name": "datadigipres"},
         {"input.date": str(datetime.datetime.now())[:10]},
         {"input.time": str(datetime.datetime.now())[11:19]},
-        {
-            "input.notes": f"Film Fund - automated bulk documentation for separate audio"
-        }
+        {"input.notes": f"Film Fund - automated bulk documentation for separate audio"},
     ]
     item.append({"record_type": "ITEM"})
     item.append({"item_type": "DIGITAL"})

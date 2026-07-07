@@ -1,19 +1,31 @@
-import os
-import sys
-from datetime import datetime, timedelta, time
+"""
+The aim of the script is to write
+all subtitles files (.vtt) found
+in /subtitles_not_in_cid into
+CID database with its corresponding
+data such as date, type of subtitle
+and the contents in .vtt files.
 
-sys.path.append(os.environ["CODE"])
-import utils
-import adlib_v3 as adlib
-import adlib_v3_sess as adlib_sess
+June 2026
+"""
+
+import argparse
+import logging
+import os
+import re
 import shutil
+import sys
+import time
+from dataclasses import dataclass
+from datetime import datetime, timedelta, time
 from pathlib import Path
 from typing import Optional
-import logging
-import re
-from dataclasses import dataclass
-import argparse
-import time
+
+sys.path.append(os.environ["CODE"])
+import adlib_v3 as adlib
+import adlib_v3_sess as adlib_sess
+import utils
+
 
 CID_API = os.environ["CID_API3"]
 LOG_PATH = os.environ["LOG_PATH"]
@@ -22,10 +34,7 @@ SUBTITLE_FOLDER = os.path.join(
 )
 
 PROCESSED_FOLDER = Path(
-    os.getenv(
-        "PROCESSED_FOLDER",
-        os.path.join(os.environ.get("ADMIN"), "off_air_tv/subtitles"),
-    )
+    os.getenv("PROCESSED_FOLDER", "/mnt/qnap_04/Admin/off_air_tv/subtitles")
 )
 
 EDITOR_NAME = "datadigipres"
@@ -54,10 +63,12 @@ class TransmissionInfo:
 
 
 def is_safe_search_value(value: str) -> bool:
+    """Check whether value contains only safe characters for search queries."""
     return bool(_SAFE_VALUE_RE.fullmatch(value))
 
 
 def safe_search_query(field: str, value: str) -> str:
+    """Build a safe search query string; raises ValueError if value is unsafe."""
     if not is_safe_search_value(value):
         raise ValueError(f"Unsafe search value for {field}={value!r}")
     return f"{field}='{value}'"
@@ -69,6 +80,7 @@ def retrieve_single_record(
     search_value: str,
     fields: Optional[list[str]] = None,
 ) -> Optional[list[dict]]:
+    """Query adlib for a single record matching search_field=search_value."""
     query = safe_search_query(search_field, search_value)
     hits, records = adlib.retrieve_record(CID_API, database, query, "1", fields=fields)
     if not hits or not records:
@@ -77,11 +89,13 @@ def retrieve_single_record(
 
 
 def get_field(record: dict, field_name: str) -> Optional[str]:
+    """Return the first value of a field from an  record, or None if absent."""
     values = adlib.retrieve_field_name(record, field_name)
     return values[0] if values else None
 
 
 def get_item_priref(object_number: str) -> Optional[str]:
+    """Look up an item's priref by object_number via the adlib API."""
     records = retrieve_single_record("items", "object_number", object_number)
     if not records:
         logger.warning("No item found for object_number=%s", object_number)
@@ -90,6 +104,7 @@ def get_item_priref(object_number: str) -> Optional[str]:
 
 
 def get_manifestation_priref(item_priref: str) -> Optional[str]:
+    """Look up the parent manifestation priref for a given item priref."""
     records = retrieve_single_record("items", "priref", item_priref)
     if not records:
         logger.warning("No manifestation record for item_priref=%s", item_priref)
@@ -100,6 +115,7 @@ def get_manifestation_priref(item_priref: str) -> Optional[str]:
 def get_transmission_info(
     manifestation_priref: str,
 ) -> Optional[TransmissionInfo]:
+    """Retrieve transmission date, start, and end time for a manifestation."""
     records = retrieve_single_record(
         "items",
         "priref",
@@ -144,6 +160,7 @@ def working_day_check(dt: datetime) -> bool:
 
 
 def adjust_date_for_midnight(info: TransmissionInfo) -> str:
+    """Check if a show ran past midnight and adjust the date accordingly."""
     try:
         end = datetime.strptime(info.end_time, TIME_FORMAT)
         start = datetime.strptime(info.start_time, TIME_FORMAT)
@@ -161,6 +178,7 @@ def adjust_date_for_midnight(info: TransmissionInfo) -> str:
 
 
 def build_subtitle_edit_xml(priref: str, subtitle_date: str, vtt_text: str) -> str:
+    """Build XML edit record payload with subtitle metadata and VTT content."""
     now = datetime.now()
     edit_entries = [
         {"edit.date": now.strftime("%Y-%m-%d")},
@@ -175,6 +193,7 @@ def build_subtitle_edit_xml(priref: str, subtitle_date: str, vtt_text: str) -> s
 
 
 def post_xml_to_cid(edit_xml) -> tuple[bool, str]:
+    """Post an edit XML record to the CID API. Returns (success, error_reason)."""
     try:
         record = adlib_sess.post(CID_API, edit_xml, "items", "updaterecord", None)
     except Exception as err:
@@ -199,6 +218,8 @@ def post_xml_to_cid(edit_xml) -> tuple[bool, str]:
 
 
 def main():
+    """Parse args, iterate VTT files, and post subtitle records to CID."""
+
     parser = argparse.ArgumentParser(
         description="Relocate subtitle VTT files into the CID database."
     )
@@ -210,10 +231,15 @@ def main():
     )
     args = parser.parse_args()
 
-    # if working_day_check(datetime.now()):
-    #    sys.exit("Exiting: Cannot operate in working hours")
+    if working_day_check(datetime.now()):
+        sys.exit("Exiting: Cannot operate in working hours")
+    if not utils.check_storage(STORAGE):
+        sys.exit("Script run prevented by storage_control.json. Script exiting.")
+    if not utils.check_control("pause_scripts") or not utils.check_control("stora"):
+        sys.exit("Script run prevented by downtime_control.json. Script exiting.")
     logger.info(
-        "========== subtitle creation script STARTED ==============================================="
+        "========== subtitle creation script STARTED "
+        "==============================================="
     )
     list_files = [f for f in os.listdir(SUBTITLE_FOLDER) if f.endswith(".vtt")]
     if args.limit:
@@ -222,12 +248,13 @@ def main():
     total = len(list_files)
     successes = 0
     errors = 0
-    # os.listdir(SUBTITLE_FOLDER)[20:30]
 
     for file in list_files:
         object_number = utils.get_object_number(file)
         logger.info(
-            "PROCESSING start | file=%s | object_number=%s", file, object_number
+            "PROCESSING start | file=%s | object_number=%s",
+            file,
+            object_number,
         )
         time.sleep(2)
         if not is_safe_search_value(object_number):
@@ -241,17 +268,27 @@ def main():
 
         item_priref = get_item_priref(object_number)
         logger.info("Item priref: %s", item_priref)
-        logger.info("PROCESSING item_priref | file=%s | priref=%s", file, item_priref)
+        logger.info(
+            "PROCESSING item_priref | file=%s | priref=%s",
+            file,
+            item_priref,
+        )
         if item_priref is None:
             logger.error("Skipping %s: no item priref found", file)
             errors += 1
             continue
 
         mani_priref = get_manifestation_priref(item_priref)
-        logger.info("PROCESSING manifestation | file=%s | priref=%s", file, mani_priref)
+        logger.info(
+            "PROCESSING manifestation | file=%s | priref=%s",
+            file,
+            mani_priref,
+        )
         if mani_priref is None:
             logger.error(
-                "Skipping %s: no manifestation priref for item %s", file, item_priref
+                "Skipping %s: no manifestation priref for item %s",
+                file,
+                item_priref,
             )
             errors += 1
             continue
@@ -260,7 +297,7 @@ def main():
         trans_info = get_transmission_info(mani_priref)
         if not trans_info:
             logger.error(
-                "Skipping %s: no/incomplete transmission data for manifestation %s",
+                "Skipping %s: no/incomplete transmission data for " "manifestation %s",
                 file,
                 mani_priref,
             )
@@ -293,7 +330,7 @@ def main():
 
         logger.debug("XML payload:\n%s", xml_payload)
 
-        success, reason = post_edit_record(xml_payload)
+        success, reason = post_xml_to_cid(xml_payload)
         if success:
             successes += 1
             logger.info("SUCCESS | Post Successful")
@@ -301,16 +338,25 @@ def main():
             logger.error("FAIL | reason=%s", reason)
             errors += 1
 
-        # shutil.move(file_path, str(PROCESSED_FOLDER / file))
-        # logger.info("Moved %s -> %s", file, PROCESSED_FOLDER / file)
+        shutil.move(file_path, str(PROCESSED_FOLDER / file))
+        logger.info("Moved %s -> %s", file, PROCESSED_FOLDER / file)
 
-        logger.info("PROCESSED ok | file=%s | object_number=%s", file, object_number)
-        successes += 1
-    logger.info("SUMMARY: %d / %d succeeded | %d errors", successes, total, errors)
+        logger.info(
+            "PROCESSED ok | file=%s | object_number=%s",
+            file,
+            object_number,
+        )
+    logger.info(
+        "SUMMARY: %d / %d succeeded | %d errors",
+        successes,
+        total,
+        errors,
+    )
     if errors:
         logger.warning("Review errors above for %d failed file(s)", errors)
     logger.info(
-        "========== subtitle creation script END ==============================================="
+        "========== subtitle creation script END "
+        "==============================================="
     )
 
 
