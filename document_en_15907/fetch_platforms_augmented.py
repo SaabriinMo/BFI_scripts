@@ -87,7 +87,7 @@ def get_folder_title(article: str, title: str) -> str:
     title = (
         title.replace("/", "-")
         .replace("'", "")
-        #.replace("&", "and")
+        # .replace("&", "and")
         .replace("(", "")
         .replace(")", "")
         .replace("!", "")
@@ -107,7 +107,7 @@ def fetch(
     """
     Fetch data from PATV URL
     """
-    url_title = title.replace(" ", "%20") #.replace("&", "and")
+    url_title = title.replace(" ", "%20")  # .replace("&", "and")
     url_title = f"%27{url_title}%27"
     print(search_type, url_title)
     if search_type == "title":
@@ -266,7 +266,7 @@ def main() -> None:
             title_retrieve = title
 
         cat_id = ""
-        title_retrieve = title_retrieve.replace('/', '-')
+        title_retrieve = title_retrieve.replace("/", "-")
         storage_path = os.path.join(STORAGE, platform.upper())
         for key, value in STREAM_KEYS.items():
             if platform == key:

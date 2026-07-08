@@ -98,7 +98,7 @@ def get_folder_title(article: str, title: str) -> str:
     title = (
         title.replace("/", "")
         .replace("'", "")
-        #.replace("&", "and")
+        # .replace("&", "and")
         .replace("(", "")
         .replace(")", "")
         .replace("!", "")
@@ -735,14 +735,11 @@ def main():
                     "More than one entry found for %s %s. Manual assistance needed.\n%s",
                     article,
                     title,
-                    matched_folders
+                    matched_folders,
                 )
                 continue
         if len(matched_folders) == 0:
-            LOGGER.warning("No match found: %s %s",
-            article,
-            title
-            )
+            LOGGER.warning("No match found: %s %s", article, title)
             # At some point initiate 'title' search in PATV data
             continue
 
@@ -906,7 +903,9 @@ def main():
                     if x.startswith("series_") and x.endswith(".json")
                 ]
                 if not len(series_json) == 1:
-                    LOGGER.warning("Length of Series JSON does not equal 1 %s", len(series_json))
+                    LOGGER.warning(
+                        "Length of Series JSON does not equal 1 %s", len(series_json)
+                    )
                     continue
 
                 # Get series ID title and genre

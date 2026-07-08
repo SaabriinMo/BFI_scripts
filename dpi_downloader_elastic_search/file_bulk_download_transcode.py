@@ -436,6 +436,7 @@ def main():
             # Try to locate CID media record for file
             blob = False
             media_priref, orig_fname, bucket = get_media_original_filename(fname)
+            LOGGER.info("Bucket: %s", bucket)
             if not media_priref:
                 LOGGER.warning(
                     "Filename is not recognised, no matching CID Media record"
@@ -455,7 +456,7 @@ def main():
                 orig_fname,
                 media_priref,
             )
-            if 'blobbing' in str(bucket):
+            if "blobbing" in str(bucket):
                 blob = True
 
             # Check if download already exists
@@ -479,7 +480,7 @@ def main():
             if not skip_download:
                 # Download from BP
                 LOGGER.info("Beginning download of file %s to download path", fname)
-                if blob is False:
+                if not blob:
                     update_table(user_id, "Downloading")
                     try:
                         download_job_id = bp.download_bp_object(
@@ -492,7 +493,9 @@ def main():
                 elif blob is True:
                     LOGGER.info("File is blobbed. Changing retrieval method")
                     try:
-                        download_job_id = bp.download_blobbed_object(fname, download_fpath, bucket)
+                        download_job_id = bp.download_blobbed_object(
+                            fname, download_fpath, bucket
+                        )
                     except Exception as error:
                         print(error)
                         update_table(user_id, "Blob download error")
@@ -523,22 +526,24 @@ def main():
                 else:
                     LOGGER.warning("Download file not found in destination!")
                     update_table(user_id, "File failed to download")
+                    continue
 
-                # MD5 Verification
-                local_md5, bp_md5 = make_check_md5(new_fpath, fname, bucket)
-                LOGGER.info(
-                    "MD5 checksum validation check:\n\t%s - Downloaded file MD5\n\t%s - Black Pearl retrieved MD5",
-                    local_md5,
-                    bp_md5,
-                )
-                if local_md5 == bp_md5:
+                # MD5 Verification - skip for blobbed items
+                if not blob:
+                    local_md5, bp_md5 = make_check_md5(new_fpath, fname, bucket)
                     LOGGER.info(
-                        "MD5 checksums match. Updating Download status to Download database"
+                        "MD5 checksum validation check:\n\t%s - Downloaded file MD5\n\t%s - Black Pearl retrieved MD5",
+                        local_md5,
+                        bp_md5,
                     )
-                else:
-                    LOGGER.warning(
-                        "MD5 checksums DO NOT match. Updating Download status to Download database"
-                    )
+                    if local_md5 == bp_md5:
+                        LOGGER.info(
+                            "MD5 checksums match. Updating Download status to Download database"
+                        )
+                    else:
+                        LOGGER.warning(
+                            "MD5 checksums DO NOT match. Updating Download status to Download database"
+                        )
                 update_table(user_id, "Download complete")
 
             # Transcode
@@ -653,7 +658,7 @@ def main():
                         orig_fname,
                         media_priref,
                     )
-                    if 'blobbing' in bucket:
+                    if "blobbing" in bucket:
                         blob = True
 
                     # Check if download already exists
@@ -677,7 +682,9 @@ def main():
                             )
                         elif blob is True:
                             LOGGER.info("File is blobbed. Changing retrieval method")
-                            download_job_id = bp.download_blobbed_object(filename, download_fpath, bucket)
+                            download_job_id = bp.download_blobbed_object(
+                                filename, download_fpath, bucket
+                            )
 
                         if not download_job_id:
                             LOGGER.warning(
@@ -715,21 +722,24 @@ def main():
                                 f"CID media priref: {media_priref} - Filename: {filename}"
                             )
                             continue
-                        # MD5 Verification
-                        local_md5, bp_md5 = make_check_md5(new_fpath, filename, bucket)
-                        LOGGER.info(
-                            "MD5 checksum validation check:\n\t%s - Downloaded file MD5\n\t%s - Black Pearl retrieved MD5",
-                            local_md5,
-                            bp_md5,
-                        )
-                        if local_md5 == bp_md5:
+                        # MD5 Verification - skip blobbed items
+                        if blob is False:
+                            local_md5, bp_md5 = make_check_md5(
+                                new_fpath, filename, bucket
+                            )
                             LOGGER.info(
-                                "MD5 checksums match. Updating Download status to Download database"
+                                "MD5 checksum validation check:\n\t%s - Downloaded file MD5\n\t%s - Black Pearl retrieved MD5",
+                                local_md5,
+                                bp_md5,
                             )
-                        else:
-                            LOGGER.warning(
-                                "MD5 checksums DO NOT match. Updating Download status to Download database"
-                            )
+                            if local_md5 == bp_md5:
+                                LOGGER.info(
+                                    "MD5 checksums match. Updating Download status to Download database"
+                                )
+                            else:
+                                LOGGER.warning(
+                                    "MD5 checksums DO NOT match. Updating Download status to Download database"
+                                )
 
                     # Transcode
                     trans, failed_trans = create_transcode(
@@ -910,7 +920,9 @@ This is an automated notification, please do not reply to this email.
 Thank you,
 Digital Preservation team"""
 
-    success, error = utils.send_email(email, "digitalpreservationsystems@bfi.org.uk", subject, body, "")
+    success, error = utils.send_email(
+        email, "digitalpreservationsystems@bfi.org.uk", subject, body, ""
+    )
     if success:
         LOGGER.info("Email notification sent to %s", email)
     else:
@@ -995,7 +1007,9 @@ This is an automated notification, please do not reply to this email.
 Thank you,
 Digital Preservation team"""
 
-    success, error = utils.send_email(email, "digitalpreservationsystems@bfi.org.uk", subject, body, "")
+    success, error = utils.send_email(
+        email, "digitalpreservationsystems@bfi.org.uk", subject, body, ""
+    )
     if success:
         LOGGER.info("Email notification sent to %s", email)
     else:
@@ -1032,7 +1046,9 @@ This is an automated notification, please do not reply to this email.
 Thank you,
 Digital Preservation team"""
 
-    success, error = utils.send_email(email, "digitalpreservationsystems@bfi.org.uk", subject, body, "")
+    success, error = utils.send_email(
+        email, "digitalpreservationsystems@bfi.org.uk", subject, body, ""
+    )
     if success:
         LOGGER.info("Email notification sent to %s", email)
     else:
