@@ -96,9 +96,9 @@ def walk_folders() -> list[str]:
 
     rename_folders: list[str] = []
     for root, dirs, _ in os.walk(STORAGE):
-        for dir in dirs:
-            if "rename_disney" == dir:
-                rename_folders.append(os.path.join(root, dir))
+        for directory in dirs:
+            if "rename_disney" == directory:
+                rename_folders.append(os.path.join(root, directory))
     print(f"{len(rename_folders)} rename folder(s) found")
     folder_list = []
     for rename_folder in rename_folders:
@@ -240,11 +240,10 @@ def main():
                     )
                     shutil.move(new_fpath, os.path.join(AUTOINGEST, new_filename))
                     continue
-                else:
-                    LOGGER.warning(
-                        "Failed to rename file. Leaving in folder for manual intervention."
-                    )
-                    continue
+                LOGGER.warning(
+                    "Failed to rename file. Leaving in folder for manual intervention."
+                )
+                continue
             elif "SDR" in metadata:
                 LOGGER.info("UHD SDR file found: %s", mov_file)
                 # Build dictionary from CID item record
@@ -308,11 +307,10 @@ def main():
                 )
                 shutil.move(new_fpath, os.path.join(AUTOINGEST, new_filename))
                 continue
-            else:
-                LOGGER.warning(
-                    "Failed to rename file. Leaving in folder for manual intervention."
-                )
-                continue
+            LOGGER.warning(
+                "Failed to rename file. Leaving in folder for manual intervention."
+            )
+            continue
 
         # Check folder is empty and delete
         contents = list(os.listdir(fpath))

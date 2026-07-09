@@ -17,7 +17,7 @@ import shutil
 import sys
 import time as ti
 from dataclasses import dataclass
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -27,6 +27,7 @@ import adlib_v3_sess as adlib_sess
 import utils
 
 CID_API = os.environ['CID_API4']
+
 LOG_PATH = os.environ["LOG_PATH"]
 SUBTITLE_FOLDER = os.path.join(
     os.environ.get("ADMIN"), "off_air_tv/subtitles_not_in_cid"
