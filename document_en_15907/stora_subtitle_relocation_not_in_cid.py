@@ -26,7 +26,7 @@ import adlib_v3 as adlib
 import adlib_v3_sess as adlib_sess
 import utils
 
-CID_API = os.environ['CID_API4']
+CID_API = os.environ["CID_API4"]
 
 LOG_PATH = os.environ["LOG_PATH"]
 SUBTITLE_FOLDER = os.path.join(
@@ -48,12 +48,8 @@ TIME_FORMAT = "%H:%M:%S"
 DATE_FORMAT = "%Y-%m-%d"
 
 logger = logging.getLogger("subtitle_relocation")
-hdlr = logging.FileHandler(
-    os.path.join(LOG_PATH, "subtitle_relocation.log")
-)
-formatter = logging.Formatter(
-    "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-)
+hdlr = logging.FileHandler(os.path.join(LOG_PATH, "subtitle_relocation.log"))
+formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)
 logger.setLevel(logging.DEBUG)
@@ -89,9 +85,7 @@ def retrieve_single_record(
 ) -> Optional[list[dict]]:
     """Query adlib for a single record matching search_field=search_value."""
     query = safe_search_query(search_field, search_value)
-    hits, records = adlib.retrieve_record(
-        CID_API, database, query, "1", fields=fields
-    )
+    hits, records = adlib.retrieve_record(CID_API, database, query, "1", fields=fields)
     if not hits or not records:
         return None
     return records
@@ -153,9 +147,7 @@ def get_transmission_info(
         )
         return None
 
-    return TransmissionInfo(
-        date=trans_date, start_time=start_time, end_time=end_time
-    )
+    return TransmissionInfo(date=trans_date, start_time=start_time, end_time=end_time)
 
 
 def working_day_check(dt: datetime) -> bool:
@@ -200,12 +192,10 @@ def build_subtitle_edit_xml(
         {"edit.time": now.strftime("%H:%M:%S")},
         {"subtitle.date": subtitle_date},
         {"subtitle.text": vtt_text},
-        {"subtitle.type": SUBTITLE_TYPE}
+        {"subtitle.type": SUBTITLE_TYPE},
     ]
     if manifestation:
-        edit_entries = [
-            {"accessibility_resource": "SUBTITLES"}
-        ]
+        edit_entries = [{"accessibility_resource": "SUBTITLES"}]
     return adlib.create_grouped_data(priref, "Edit", [edit_entries])
 
 
@@ -248,20 +238,17 @@ def main():
     )
     args = parser.parse_args()
 
-    #if working_day_check(datetime.now()):
+    # if working_day_check(datetime.now()):
     #    sys.exit("Exiting: Cannot operate in working hours")
-    #if not utils.check_storage(STORAGE):
+    # if not utils.check_storage(STORAGE):
     #   sys.exit("Script run prevented by storage_control.json. Script exiting.")
-    #if not utils.check_control("pause_scripts") or not utils.check_control("stora"):
+    # if not utils.check_control("pause_scripts") or not utils.check_control("stora"):
     #    sys.exit("Script run prevented by downtime_control.json. Script exiting.")
     logger.info(
         "========== subtitle creation script STARTED "
         "==============================================="
     )
-    list_files = [
-        f for f in os.listdir(SUBTITLE_FOLDER)
-        if f.endswith(".vtt")
-    ]
+    list_files = [f for f in os.listdir(SUBTITLE_FOLDER) if f.endswith(".vtt")]
     if args.limit:
         list_files = list_files[: args.limit]
 
@@ -331,9 +318,7 @@ def main():
             subtitle_date = adjust_date_for_midnight(trans_info)
             logger.info("subtitle_date: %s", subtitle_date)
         except ValueError as exc:
-            logger.error(
-                "Date adjustment failed for %s: %s", file, exc
-            )
+            logger.error("Date adjustment failed for %s: %s", file, exc)
             errors += 1
             continue
 
@@ -349,13 +334,11 @@ def main():
         xml_payload = build_subtitle_edit_xml(
             item_priref, subtitle_date, webvtt_payload, False
         )
-        # get manifestion priref -> create xml to add accessbility 
-        manifestation_xml = build_subtitle_edit_xml(
-            mani_priref, "", "", True
-        )
-       
+        # get manifestion priref -> create xml to add accessbility
+        manifestation_xml = build_subtitle_edit_xml(mani_priref, "", "", True)
+
         logger.debug("XML payload:\n%s", xml_payload)
-        logger.debug ("Manifestation payload: \n%s", manifestation_xml)
+        logger.debug("Manifestation payload: \n%s", manifestation_xml)
 
         success, reason = post_xml_to_cid(xml_payload, "items", session)
         if success:
@@ -395,4 +378,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
