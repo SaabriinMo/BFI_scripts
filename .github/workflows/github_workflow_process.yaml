@@ -23,7 +23,8 @@ jobs:
           echo "repo owner: ${{ github.repository_owner }}"
       - uses: actions/checkout@v4
         with:
-          ref:  ${{ github.head_ref != '' && github.head_ref || github.ref != '' && github.ref || 'main' }}
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.head_ref || github.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
