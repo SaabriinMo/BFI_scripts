@@ -136,6 +136,16 @@ jobs:
           env:
             GH_TOKEN: ${{ secrets.BFI_BOT_TOKEN }}
 
+        - name: Debug token presence
+          run: |
+            if [ -z "${{ secrets.BFI_BOT_TOKEN }}" ]; then
+              echo "BFI_BOT_TOKEN is EMPTY"
+            else
+              echo "BFI_BOT_TOKEN is set (length: ${#TOKEN})"
+            fi
+          env:
+            TOKEN: ${{ secrets.BFI_BOT_TOKEN }}
+
         - uses: actions/checkout@v4
           with:
             repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
