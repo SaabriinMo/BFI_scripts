@@ -130,7 +130,7 @@ jobs:
       steps:
         - name: Set up GitHub CLI
           run: |
-            curl -fsSL https://cli.github.com/install.sh | bash
+            sudo apt-get update && sudo apt-get install -y gh
 
         - name: Authenticate GitHub CLI
           run: |
