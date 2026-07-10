@@ -227,7 +227,7 @@ jobs:
             fi
 
         - name: Comment on PR with Full Pylint Report
-          if: steps.check-pr.outputs.exists == 'true'
+          if: steps.check-pr.outputs.exists == 'true' && github.event.pull_request.head.repo.full_name == github.repository
           uses: peter-evans/create-or-update-comment@f5b41f6a455733f2c5f73ca67a62631e75861578
           with:
             issue-number: ${{ steps.check-pr.outputs.number }}
@@ -235,11 +235,9 @@ jobs:
             repository: bfidatadigipres/BFI_scripts
             body: |
               **Automated Pylint Report** 🧑‍💻
-
               Here is the **formatted** Pylint report:
               ```plaintext
-              ${{ env.pylint_report }}
+                    ${{ env.pylint_report }}
               ```
-
-              **Note:** 🚨 Errors need immediate attention! ⚠️ Warnings should be reviewed, but are less critical. ℹ️ Information messages are for your reference.
-            token: ${{ secrets.BFI_BOT_TOKEN }}
+                    **Note:** 🚨 Errors need immediate attention! ⚠️ Warnings should be reviewed, but are less critical. ℹ️ Information messages are for your reference.
+                  token: ${{ secrets.BFI_BOT_TOKEN }}
