@@ -238,12 +238,10 @@ def main():
     )
     args = parser.parse_args()
 
-    # if working_day_check(datetime.now()):
-    #    sys.exit("Exiting: Cannot operate in working hours")
-    # if not utils.check_storage(STORAGE):
-    #   sys.exit("Script run prevented by storage_control.json. Script exiting.")
-    # if not utils.check_control("pause_scripts") or not utils.check_control("stora"):
-    #    sys.exit("Script run prevented by downtime_control.json. Script exiting.")
+    if working_day_check(datetime.now()):
+        sys.exit("Exiting: Cannot operate in working hours")
+    if not utils.check_control("pause_scripts") or not utils.check_control("stora"):
+        sys.exit("Script run prevented by downtime_control.json. Script exiting.")
     logger.info(
         "========== subtitle creation script STARTED "
         "==============================================="
@@ -344,19 +342,12 @@ def main():
         if success:
             successes += 1
             logger.info("SUCCESS | Post Successful")
+            shutil.move(file_path, str(PROCESSED_FOLDER / file))
+            logger.info("Moved %s -> %s", file, PROCESSED_FOLDER / file)
         else:
             logger.error("FAIL | reason=%s", reason)
             errors += 1
 
-        success, reason = post_xml_to_cid(manifestation_xml, "manifestations", session)
-        if success:
-            successes += 1
-            logger.info("SUCCESS | Manifestation: Post Successful")
-        else:
-            logger.error("FAIL | reason=%s", reason)
-            errors += 1
-        # shutil.move(file_path, str(PROCESSED_FOLDER / file))
-        # logger.info("Moved %s -> %s", file, PROCESSED_FOLDER / file)
         logger.info(
             "PROCESSED ok | file=%s | object_number=%s",
             file,
