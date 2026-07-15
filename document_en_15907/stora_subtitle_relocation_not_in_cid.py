@@ -26,7 +26,7 @@ import adlib_v3 as adlib
 import adlib_v3_sess as adlib_sess
 import utils
 
-CID_API = os.environ["CID_API4"]
+CID_API = utils.get_current_api()
 
 LOG_PATH = os.environ["LOG_PATH"]
 SUBTITLE_FOLDER = os.path.join(
