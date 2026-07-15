@@ -238,12 +238,10 @@ def main():
     )
     args = parser.parse_args()
 
-    # if working_day_check(datetime.now()):
-    #    sys.exit("Exiting: Cannot operate in working hours")
-    #if not utils.check_storage(STORAGE):
-    #    sys.exit("Script run prevented by storage_control.json. Script exiting.")
-    #if not utils.check_control("pause_scripts") or not utils.check_control("stora"):
-    #    sys.exit("Script run prevented by downtime_control.json. Script exiting.")
+    if working_day_check(datetime.now()):
+        sys.exit("Exiting: Cannot operate in working hours")
+    if not utils.check_control("pause_scripts") or not utils.check_control("stora"):
+        sys.exit("Script run prevented by downtime_control.json. Script exiting.")
     logger.info(
         "========== subtitle creation script STARTED "
         "==============================================="
