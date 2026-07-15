@@ -347,12 +347,12 @@ def main():
         if success:
             successes += 1
             logger.info("SUCCESS | Post Successful")
+            shutil.move(file_path, str(PROCESSED_FOLDER / file))
+            logger.info("Moved %s -> %s", file, PROCESSED_FOLDER / file)
         else:
             logger.error("FAIL | reason=%s", reason)
             errors += 1
 
-        # shutil.move(file_path, str(PROCESSED_FOLDER / file))
-        # logger.info("Moved %s -> %s", file, PROCESSED_FOLDER / file)
         logger.info(
             "PROCESSED ok | file=%s | object_number=%s",
             file,
