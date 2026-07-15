@@ -21,23 +21,28 @@ logger.addHandler(hdlr)
 logger.setLevel(logging.INFO)
 logger.info("Logger initialised")
 
+
 @dataclass
 class TransmissionInfo:
     date: str
     start_time: str
     end_time: str
 
+
 def is_safe_search_value(value: str) -> bool:
     return bool(_SAFE_VALUE_RE.fullmatch(value))
+
 
 def safe_search_query(field: str, value: str) -> str:
     if not is_safe_search_value(value):
         raise ValueError(f"Unsafe search value for {field}={value!r}")
     return f"{field}='{value}'"
 
+
 def get_field(record: dict, field_name: str) -> Optional[str]:
     values = adlib.retrieve_field_name(record, field_name)
     return values[0] if values else None
+
 
 def retrieve_single_record(
     database: str,
@@ -46,9 +51,7 @@ def retrieve_single_record(
     fields: Optional[list[str]] = None,
 ) -> Optional[list[dict]]:
     query = safe_search_query(search_field, search_value)
-    hits, records = adlib.retrieve_record(
-        CID_API, database, query, "1", fields=fields
-    )
+    hits, records = adlib.retrieve_record(CID_API, database, query, "1", fields=fields)
     if not hits or not records:
         return None
     return records
