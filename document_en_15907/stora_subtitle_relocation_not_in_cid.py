@@ -17,12 +17,12 @@ import shutil
 import sys
 import time as ti
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
+from requests import Session
 from pathlib import Path
 from typing import Optional
 
 sys.path.append(os.environ["CODE"])
-import adlib_v3 as adlib
 import adlib_v3_sess as adlib_sess
 import utils
 
@@ -81,11 +81,12 @@ def retrieve_single_record(
     database: str,
     search_field: str,
     search_value: str,
+    session: Session, 
     fields: Optional[list[str]] = None,
 ) -> Optional[list[dict]]:
     """Query adlib for a single record matching search_field=search_value."""
     query = safe_search_query(search_field, search_value)
-    hits, records = adlib.retrieve_record(CID_API, database, query, "1", fields=fields)
+    hits, records = adlib_sess.retrieve_record(CID_API, database, query, "1", session, fields=fields)
     if not hits or not records:
         return None
     return records
@@ -93,22 +94,22 @@ def retrieve_single_record(
 
 def get_field(record: dict, field_name: str) -> Optional[str]:
     """Return the first value of a field from a record, or None if absent."""
-    values = adlib.retrieve_field_name(record, field_name)
+    values = adlib_sess.retrieve_field_name(record, field_name)
     return values[0] if values else None
 
 
-def get_item_priref(object_number: str) -> Optional[str]:
+def get_item_priref(object_number: str, session: Session) -> Optional[str]:
     """Look up an item's priref by object_number via the adlib API."""
-    records = retrieve_single_record("items", "object_number", object_number)
+    records = retrieve_single_record("items", "object_number", object_number, session)
     if not records:
         logger.warning("No item found for object_number=%s", object_number)
         return None
     return get_field(records[0], "priref")
 
 
-def get_manifestation_priref(item_priref: str) -> Optional[str]:
+def get_manifestation_priref(item_priref: str, session: Session) -> Optional[str]:
     """Look up the parent manifestation priref for a given item priref."""
-    records = retrieve_single_record("items", "priref", item_priref)
+    records = retrieve_single_record("items", "priref", item_priref, session)
     if not records:
         logger.warning("No manifestation record for item_priref=%s", item_priref)
         return None
@@ -117,12 +118,14 @@ def get_manifestation_priref(item_priref: str) -> Optional[str]:
 
 def get_transmission_info(
     manifestation_priref: str,
+    session: Session,
 ) -> Optional[TransmissionInfo]:
     """Retrieve transmission date, start, and end time for a manifestation."""
     records = retrieve_single_record(
         "items",
         "priref",
         manifestation_priref,
+        session,
         fields=[
             "transmission_date",
             "transmission_end_time",
@@ -196,7 +199,7 @@ def build_subtitle_edit_xml(
     ]
     if manifestation:
         edit_entries = [{"accessibility_resource": "SUBTITLES"}]
-    return adlib.create_grouped_data(priref, "Edit", [edit_entries])
+    return adlib_sess.create_grouped_data(priref, "Edit", [edit_entries])
 
 
 def post_xml_to_cid(edit_xml, database, session) -> tuple[bool, str]:
@@ -271,7 +274,7 @@ def main():
             errors += 1
             continue
 
-        item_priref = get_item_priref(object_number)
+        item_priref = get_item_priref(object_number, session)
         logger.info("Item priref: %s", item_priref)
         logger.info(
             "PROCESSING item_priref | file=%s | priref=%s",
@@ -283,7 +286,7 @@ def main():
             errors += 1
             continue
 
-        mani_priref = get_manifestation_priref(item_priref)
+        mani_priref = get_manifestation_priref(item_priref, session)
         logger.info(
             "PROCESSING manifestation | file=%s | priref=%s",
             file,
@@ -299,7 +302,7 @@ def main():
             continue
         logger.info("manifestation priref: %s", mani_priref)
 
-        trans_info = get_transmission_info(mani_priref)
+        trans_info = get_transmission_info(mani_priref, session)
         if not trans_info:
             logger.error(
                 "Skipping %s: no/incomplete transmission data for manifestation %s",
