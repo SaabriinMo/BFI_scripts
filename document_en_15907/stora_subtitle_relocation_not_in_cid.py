@@ -15,14 +15,14 @@ import os
 import re
 import shutil
 import sys
-import time
+import time as ti
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from pathlib import Path
 from typing import Optional
+from requests import Session
 
 sys.path.append(os.environ["CODE"])
-import adlib_v3 as adlib
 import adlib_v3_sess as adlib_sess
 import utils
 
@@ -53,7 +53,6 @@ formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s
 hdlr.setFormatter(formatter)
 logger.addHandler(hdlr)
 logger.setLevel(logging.INFO)
-logger.info("Logger initialised")
 
 _SAFE_VALUE_RE = re.compile(r"^[a-zA-Z0-9_.\- ]+$")
 
@@ -81,11 +80,12 @@ def retrieve_single_record(
     database: str,
     search_field: str,
     search_value: str,
+    session: Session,
     fields: Optional[list[str]] = None,
 ) -> Optional[list[dict]]:
     """Query adlib for a single record matching search_field=search_value."""
     query = safe_search_query(search_field, search_value)
-    hits, records = adlib.retrieve_record(CID_API, database, query, "1", fields=fields)
+    hits, records = adlib_sess.retrieve_record(CID_API, database, query, "1", session, fields=fields)
     if not hits or not records:
         return None
     return records
@@ -93,22 +93,22 @@ def retrieve_single_record(
 
 def get_field(record: dict, field_name: str) -> Optional[str]:
     """Return the first value of a field from an  record, or None if absent."""
-    values = adlib.retrieve_field_name(record, field_name)
+    values = adlib_sess.retrieve_field_name(record, field_name)
     return values[0] if values else None
 
 
-def get_item_priref(object_number: str) -> Optional[str]:
+def get_item_priref(object_number: str, session: Session) -> Optional[str]:
     """Look up an item's priref by object_number via the adlib API."""
-    records = retrieve_single_record("items", "object_number", object_number)
+    records = retrieve_single_record("items", "object_number", object_number, session)
     if not records:
         logger.warning("No item found for object_number=%s", object_number)
         return None
     return get_field(records[0], "priref")
 
 
-def get_manifestation_priref(item_priref: str) -> Optional[str]:
+def get_manifestation_priref(item_priref: str, session: Session) -> Optional[str]:
     """Look up the parent manifestation priref for a given item priref."""
-    records = retrieve_single_record("items", "priref", item_priref)
+    records = retrieve_single_record("items", "priref", item_priref, session)
     if not records:
         logger.warning("No manifestation record for item_priref=%s", item_priref)
         return None
@@ -117,12 +117,14 @@ def get_manifestation_priref(item_priref: str) -> Optional[str]:
 
 def get_transmission_info(
     manifestation_priref: str,
+    session: Session
 ) -> Optional[TransmissionInfo]:
     """Retrieve transmission date, start, and end time for a manifestation."""
     records = retrieve_single_record(
         "items",
         "priref",
         manifestation_priref,
+        session,
         fields=[
             "transmission_date",
             "transmission_end_time",
@@ -183,7 +185,7 @@ def adjust_date_for_midnight(info: TransmissionInfo) -> str:
 
 
 def build_subtitle_edit_xml(
-    priref: str, subtitle_date: str, vtt_text: str
+    priref: str, subtitle_date: str, vtt_text: str, manifestation=False
 ) -> str:
     """Build XML edit record payload with subtitle metadata and VTT content."""
     now = datetime.now()
@@ -194,9 +196,11 @@ def build_subtitle_edit_xml(
         {"edit.time": now.strftime("%H:%M:%S")},
         {"subtitle.date": subtitle_date},
         {"subtitle.text": vtt_text},
-        {"subtitle.type": SUBTITLE_TYPE}
+        {"subtitle.type": SUBTITLE_TYPE},
     ]
-    return adlib.create_grouped_data(priref, "Edit", [edit_entries])
+    if manifestation:
+        edit_entries = [{"accessibility_resource": "SUBTITLES"}]
+    return adlib_sess.create_grouped_data(priref, "Edit", [edit_entries])
 
 
 def post_xml_to_cid(edit_xml, database, session) -> tuple[bool, str]:
@@ -240,10 +244,8 @@ def main():
 
     # if working_day_check(datetime.now()):
     #    sys.exit("Exiting: Cannot operate in working hours")
-    #if not utils.check_storage(STORAGE):
-    #    sys.exit("Script run prevented by storage_control.json. Script exiting.")
-    #if not utils.check_control("pause_scripts") or not utils.check_control("stora"):
-    #    sys.exit("Script run prevented by downtime_control.json. Script exiting.")
+    if not utils.check_control("pause_scripts") or not utils.check_control("stora"):
+       sys.exit("Script run prevented by downtime_control.json. Script exiting.")
     logger.info(
         "========== subtitle creation script STARTED "
         "==============================================="
@@ -266,7 +268,7 @@ def main():
             file,
             object_number,
         )
-        time.sleep(2)
+        ti.sleep(2)
         if not is_safe_search_value(object_number):
             logger.error(
                 "Rejecting unsafe object_number=%s from filename=%s",
@@ -276,7 +278,7 @@ def main():
             errors += 1
             continue
 
-        item_priref = get_item_priref(object_number)
+        item_priref = get_item_priref(object_number, session)
         logger.info("Item priref: %s", item_priref)
         logger.info(
             "PROCESSING item_priref | file=%s | priref=%s",
@@ -288,7 +290,7 @@ def main():
             errors += 1
             continue
 
-        mani_priref = get_manifestation_priref(item_priref)
+        mani_priref = get_manifestation_priref(item_priref, session)
         logger.info(
             "PROCESSING manifestation | file=%s | priref=%s",
             file,
@@ -304,7 +306,7 @@ def main():
             continue
         logger.info("manifestation priref: %s", mani_priref)
 
-        trans_info = get_transmission_info(mani_priref)
+        trans_info = get_transmission_info(mani_priref, session)
         if not trans_info:
             logger.error(
                 "Skipping %s: no/incomplete transmission data for manifestation %s",
@@ -337,11 +339,13 @@ def main():
             continue
 
         xml_payload = build_subtitle_edit_xml(
-            item_priref, subtitle_date, webvtt_payload
+            item_priref, subtitle_date, webvtt_payload, False
         )
-        # get manifestion priref -> create xml to add accessbility 
+        # get manifestion priref -> create xml to add accessbility
+        manifestation_xml = build_subtitle_edit_xml(mani_priref, "", "", True)
 
         logger.debug("XML payload:\n%s", xml_payload)
+        logger.debug("Manifestation payload: \n%s", manifestation_xml)
 
         success, reason = post_xml_to_cid(xml_payload, "items", session)
         if success:
@@ -351,8 +355,19 @@ def main():
             logger.error("FAIL | reason=%s", reason)
             errors += 1
 
-        # shutil.move(file_path, str(PROCESSED_FOLDER / file))
-        # logger.info("Moved %s -> %s", file, PROCESSED_FOLDER / file)
+        manifestation_success, manifestation_reason = post_xml_to_cid(manifestation_xml, "manifestations", session)
+        if manifestation_success:
+            successes += 1
+            logger.info("SUCCESS | Manifestation Post Successful")
+        else:
+            logger.error("FAIL | reason=%s", manifestation_reason)
+            errors += 1
+
+        if manifestation_success and success:
+            shutil.move(file_path, str(PROCESSED_FOLDER / file))
+            logger.info("Moved %s -> %s", file, PROCESSED_FOLDER / file)
+
+
         logger.info(
             "PROCESSED ok | file=%s | object_number=%s",
             file,
