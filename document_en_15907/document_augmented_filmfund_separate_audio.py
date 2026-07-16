@@ -291,9 +291,7 @@ def make_item_record_dict(
         {"input.name": "datadigipres"},
         {"input.date": str(datetime.datetime.now())[:10]},
         {"input.time": str(datetime.datetime.now())[11:19]},
-        {
-            "input.notes": "Film Fund - automated bulk documentation for separate audio"
-        }
+        {"input.notes": "Film Fund - automated bulk documentation for separate audio"},
     ]
     item.append({"record_type": "ITEM"})
     item.append({"item_type": "DIGITAL"})
@@ -374,9 +372,7 @@ def make_item_record_dict(
     return item
 
 
-def create_digital_original_filenames(
-    priref: str, file, new_file
-) -> bool:
+def create_digital_original_filenames(priref: str, file, new_file) -> bool:
     """
     Create entries for digital.acquired_filename
     and append to the CID item record.
