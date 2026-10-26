@@ -811,5 +811,3 @@ def check_storage(filepath):
             return storage_dict[key]
 
     return "Storage not found"
-
-
