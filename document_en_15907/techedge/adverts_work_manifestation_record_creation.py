@@ -29,6 +29,9 @@ Initial run needs to manage
 which "YYYY-MM-DD_BFIExport.csv" is
 being worked on - no repeats.
 
+Runs from 5:30pm to 4am all days of week
+to avoid overlap with STORA runs
+
 2026
 """
 
@@ -89,8 +92,8 @@ CHANNELS = {
 
 def working_day_check(dt: datetime) -> bool:
     """Check for clash with working week"""
-    work_days = {0, 1, 2, 3, 4}
-    start = time(9, 0, 0)
+    work_days = {0, 1, 2, 3, 4, 5, 6}
+    start = time(4, 0, 0)
     end = time(17, 30, 0)
 
     if dt.weekday() not in work_days:

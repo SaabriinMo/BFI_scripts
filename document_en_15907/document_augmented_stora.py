@@ -61,8 +61,7 @@ CSV_FAILURES = os.path.join(LOG_PATH, "failed_mpeg_ts_files.csv")
 MPEG_TS_POLICY = os.path.join(os.environ["MEDIACONCH"], "mpeg_ts_policy.xml")
 SUBS_PTH = os.environ["SUBS_PATH"]
 GENRE_PTH = SUBS_PTH.split("subtitles_not_in_cid/")[0]
-#CID_API = utils.get_current_api()
-CID_API = os.environ.get("CID_API_CHECK")
+CID_API = utils.get_current_api()
 FAILURE_COUNTER = 0
 
 # Setup logging

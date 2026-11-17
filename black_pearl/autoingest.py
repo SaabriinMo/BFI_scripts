@@ -608,7 +608,7 @@ def main():
 
     print("* Collecting ingest sources from config.yaml...")
     config_list = []
-    config_list.append(utils.read_yaml(CONFIG))
+    #config_list.append(utils.read_yaml(CONFIG))
     config_list.append(utils.read_yaml(CONFIG2))
 
     print(f"utils.read_yaml: {config_list}")
