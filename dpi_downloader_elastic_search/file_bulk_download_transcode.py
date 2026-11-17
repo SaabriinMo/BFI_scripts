@@ -360,19 +360,32 @@ def check_download_exists(
     return new_fpath, skip_download
 
 
-def write_checksum_similarity(local_md5, bp_md5, dpath, new_fpath):
-    download_local_md5 = local_md5
+def write_checksum_similarity(local_md5, bp_md5, new_fpath, blob):
+    """
+    Function to handle checksum comparisons for QNAP-11 DMS team
+    """
+    download_local_md5 = local_md5 or utils.create_md5_65536(new_fpath)
     black_pearl_md5 = bp_md5
-    message = ""
     checksum_path = f"{new_fpath}_md5.txt"
+
+    if blob:
+        # get the md5 from cid
+        fname = os.path.basename(new_fpath)
+        search = f"imagen.media.original_filename='{fname}'"
+        record = adlib.retrieve_record(CID_API, "media", search, "0")[1]
+        if record:
+            black_pearl_md5 = adlib.retrieve_field_name(record[0], "checksum.value")[0]
+        else:
+            LOGGER.warning("No checksum.value found for CID record: %s", fname)
+            black_pearl_md5 = None
+
     if download_local_md5 == black_pearl_md5:
-        message = f"Checksum MATCH: {bp_md5} | {local_md5}"
+        message = f"Checksum MATCH: {black_pearl_md5} | {download_local_md5}"
     else:
-        message = f"Checksum DO NOT MATCH: {bp_md5} | {local_md5}"
+        message = f"Checksum DO NOT MATCH: {black_pearl_md5} | {download_local_md5}"
     with open(checksum_path, "w+", encoding="utf-8") as f:
-        f.write(f"Created from download: {local_md5} | Retrieved from BP: {bp_md5}\n")
+        f.write(f"Created from download: {download_local_md5} | Retrieved from BP: {black_pearl_md5}\n")
         f.write(message)
-    return
 
 
 def main():
@@ -546,6 +559,10 @@ def main():
                     continue
 
                 # MD5 Verification - skip for blobbed items
+                if blob:
+                    local_md5 = utils.create_md5_65536(new_fpath)
+                    bp_md5 = ""
+                    LOGGER.info("Blob download MD5: %s", local_md5)
                 if not blob:
                     local_md5, bp_md5 = make_check_md5(new_fpath, fname, bucket)
                     LOGGER.info(
@@ -570,8 +587,13 @@ def main():
             if trans == "no_transcode":
                 LOGGER.info("No transcode requested for this asset. option 1")
                 LOGGER.info("checksum filepath: %s  |  dpath: %s", new_fpath, dpath)
+                LOGGER.info("dpath: %s", dpath)
+                LOGGER.info("blobbed item?: %s", blob)
                 if '/mnt/qnap_11/hold' in dpath:
-                    write_checksum_similarity(local_md5, bp_md5, dpath, new_fpath)
+                    LOGGER.info("creating checksum file.")
+                    LOGGER.info("local md5: %s", local_md5)
+                    LOGGER.info("bp_md5: %s", bp_md5)
+                    write_checksum_similarity(local_md5, bp_md5, new_fpath, blob)
             elif not skip_download or not failed_trans:
                 LOGGER.info("Deleting downloaded asset: %s", new_fpath)
                 os.remove(new_fpath)
@@ -709,7 +731,7 @@ def main():
                         )
                         update_table(user_id, f"Downloading {orig_fname}")
                         if blob is False:
-                            download_job_id = bp.download_bp_object(
+                            download_job_id = bp.download_bp_o/bject(
                                 filename, download_fpath, bucket
                             )
                         elif blob is True:
@@ -785,7 +807,7 @@ def main():
                         if '/mnt/qnap_11/hold' in dpath:
                             LOGGER.info("checksum filepath: %s  |  dpath: %s", new_fpath, dpath)
                             write_checksum_similarity(
-                                local_md5, bp_md5, dpath, new_fpath
+                                local_md5, bp_md5, new_fpath, blob
                             )
                     elif not skip_download or not failed_trans:
                         LOGGER.info("Deleting downloaded asset: %s", new_fpath)
@@ -965,7 +987,7 @@ Digital Preservation team"""
         LOGGER.info("Email notification sent to %s", email)
     else:
         LOGGER.warning("Email notification failed in sending: %s", email)
-        LOGGER.warning(f"Error: %s", error)
+        LOGGER.warning("Error: %s", error)
 
 
 def send_email_update_bulk(
